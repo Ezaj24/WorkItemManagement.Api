@@ -41,7 +41,11 @@ namespace WorkItemManagement.Api.Controllers
             if(!ModelState.IsValid)
                 return BadRequest(ModelState);
             var createditem = _workItemService.CreateWorkItem(dto.Title, dto.Description);
-            return Ok(createditem);
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = createditem.Id },
+                createditem
+                );
         }
 
         [HttpPost("{id}/complete")]
