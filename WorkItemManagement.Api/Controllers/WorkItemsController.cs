@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WorkItemManagement.Api.Services;
 using WorkItemManagement.Api.Models;
-using WorkItemManagement.Api.DTOs;
+using WorkItemManagement.Api.Services;
 
 namespace WorkItemManagement.Api.Controllers
 {
@@ -9,25 +8,24 @@ namespace WorkItemManagement.Api.Controllers
     [Route("api/[controller]")]
     public class WorkItemsController : ControllerBase
     {
-        private readonly IWorkItemService _workItemService;
+        private readonly IWorkItemService _service;
 
-        public WorkItemsController(IWorkItemService workItemService)
+        public WorkItemsController(IWorkItemService service)
         {
-            _workItemService = workItemService;
+            _service = service;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var items = _workItemService.GetAllWorkItems();
+            var items = await _service.GetAllAsync();
             return Ok(items);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var item = _workItemService.GetWorkItemById(id);
-
+            var item = await _service.GetByIdAsync(id);
             if (item == null)
                 return NotFound();
 
@@ -35,23 +33,29 @@ namespace WorkItemManagement.Api.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] CreateWorkItemDto dto)
+        public async Task<IActionResult> Create(WorkItem item)
         {
-
-            if(!ModelState.IsValid)
-                return BadRequest(ModelState);
-            var createditem = _workItemService.CreateWorkItem(dto.Title, dto.Description);
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = createditem.Id },
-                createditem
-                );
+            var created = await _service.CreateAsync(item);
+            return Ok(created);
         }
 
-        [HttpPost("{id}/complete")]
-        public IActionResult MarkComplete(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, WorkItem item)
         {
-            _workItemService.MarkAsCompleted(id);
+            var updated = await _service.UpdateAsync(id, item);
+            if (!updated)
+                return NotFound();
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted)
+                return NotFound();
+
             return NoContent();
         }
     }

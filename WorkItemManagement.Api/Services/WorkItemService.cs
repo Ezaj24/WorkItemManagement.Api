@@ -1,48 +1,58 @@
-﻿using WorkItemManagement.Api.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using WorkItemManagement.Api.Data;
+using WorkItemManagement.Api.Models;
 
 namespace WorkItemManagement.Api.Services
 {
     public class WorkItemService : IWorkItemService
     {
-        private static readonly List<WorkItem> _workItems = new();
-        private static int _idCounter = 1;
-        public WorkItem CreateWorkItem(string title, string description)
+        private readonly AppDbContext _context;
+
+        public WorkItemService(AppDbContext context)
         {
-            var workitem = new WorkItem
-            {
-                Id = _idCounter++,
-                Title = title,
-                Description = description,
-                IsComplete = false,
-                CreatedAt = DateTime.UtcNow,
-
-            };
-
-            _workItems.Add(workitem);
-
-            return workitem;
+            _context = context;
         }
 
-        public List<WorkItem> GetAllWorkItems()
+        public async Task<List<WorkItem>> GetAllAsync()
         {
-            return _workItems;
+            return await _context.WorkItems.ToListAsync();
         }
 
-        public WorkItem? GetWorkItemById(int id)
+        public async Task<WorkItem?> GetByIdAsync(int id)
         {
-           return _workItems.FirstOrDefault(x => x.Id == id);
+            return await _context.WorkItems.FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public void MarkAsCompleted(int id)
+        public async Task<WorkItem> CreateAsync(WorkItem item)
         {
-            var workItem = _workItems.FirstOrDefault(x => x.Id == id);
+            _context.WorkItems.Add(item);
+            await _context.SaveChangesAsync();
+            return item;
+        }
 
-            if(workItem == null)
-            {
-                return;
-            }
+        public async Task<bool> UpdateAsync(int id, WorkItem item)
+        {
+            var existing = await _context.WorkItems.FindAsync(id);
+            if (existing == null)
+                return false;
 
-            workItem.IsComplete = true;
+            existing.Title = item.Title;
+            existing.Description = item.Description;
+            existing.IsCompleted = item.IsCompleted;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var item = await _context.WorkItems.FindAsync(id);
+            if (item == null)
+                return false;
+
+            _context.WorkItems.Remove(item);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }
