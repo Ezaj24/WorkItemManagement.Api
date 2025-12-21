@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WorkItemManagement.Api.Dtos;
+using WorkItemManagement.Api.DTOs;
 using WorkItemManagement.Api.Models;
 using WorkItemManagement.Api.Services;
 
@@ -33,21 +35,46 @@ namespace WorkItemManagement.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(WorkItem item)
+        public async Task<IActionResult> Create([FromBody] CreateWorkItemDto dto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var item = new WorkItem
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                IsCompleted = false
+            };
+
             var created = await _service.CreateAsync(item);
-            return Ok(created);
+
+            return CreatedAtAction(nameof(GetById), new {id = created.Id},created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, WorkItem item)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateWorkItemDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var item = new WorkItem
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                IsCompleted = dto.IsCompleted
+            };
+
             var updated = await _service.UpdateAsync(id, item);
+
             if (!updated)
                 return NotFound();
 
             return NoContent();
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
